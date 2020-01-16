@@ -17,7 +17,6 @@
 # ##### END GPL LICENSE BLOCK #####
 
 __author__ = "Satish Goda <satishgoda@live.com>"
-
 import bpy
 
 
@@ -72,6 +71,17 @@ class HelloWorldPanel(bpy.types.Panel):
         col = layout.column()
         col.label(text="LIGHTS", icon='LIGHT_DATA')
         col.separator()
+        
+        col = layout.box()
+        row = col.row()
+        row.alignment = 'LEFT'
+        row.operator('object.light_add', icon='ADD')
+        if isinstance(context.active_object.data, bpy.types.Light):
+            properties_context_change = row.operator('wm.properties_context_change', text='Light Properties', icon='LIGHT_DATA')
+            properties_context_change.context = 'DATA'
+#        op = row.operator('wm.operator_pie_enum', text='Add Light')
+#        op.data_path = 'object.light_add'
+#        op.prop_string = 'type'
         
         col = layout.box()
         col_gaffer = context.view_layer.layer_collection.children['Gaffer'].children['Lights'].collection
