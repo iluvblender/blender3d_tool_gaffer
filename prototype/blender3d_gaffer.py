@@ -17,8 +17,8 @@
 # ##### END GPL LICENSE BLOCK #####
 
 __author__ = "Satish Goda <satishgoda@live.com>"
-import bpy
 
+import bpy
 
 class HelloWorldPanel(bpy.types.Panel):
     """Creates a Panel in the World properties window"""
@@ -30,43 +30,65 @@ class HelloWorldPanel(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
+        coll_gaffer = None
+        coll_gaffer_cameras = None
+        coll_gaffer_lights = None
+        
+        try:
+            coll_gaffer = context.view_layer.layer_collection.children['Gaffer']
+        except KeyError:
+            pass
+
+        if coll_gaffer:
+            try:
+                coll_gaffer_cameras = coll_gaffer.children['Cameras']
+            except KeyError:
+                pass
+
+            try:
+                coll_gaffer_lights = coll_gaffer.children['Lights']
+            except KeyError:
+                pass
 
         col = layout.column()
         col.label(text="CAMERAS", icon='CAMERA_DATA')
         col.separator()
         
         col = layout.box()
-        col_gaffer_cameras = context.view_layer.layer_collection.children['Gaffer'].children['Cameras'].collection
-        for camera in col_gaffer_cameras.objects:
-            row = col.row()
-            row.alignment = 'LEFT'
-            if context.active_object == camera:
-                row.alert = True
-            if not camera in context.selected_objects:
-                row.active = False
-            if not context.scene.camera == camera:
-                op = row.operator('wm.context_set_value', text='scnCam')
-                op.data_path = 'scene.camera'
-                op.value = "context.scene.view_layers['{0}'].layer_collection.children['Gaffer'].children['Cameras'].collection.objects['{1}']".format(
-                                                context.view_layer.name, 
-                                                camera.name)
-            else:
-                row.label(text='                ')
+        if coll_gaffer_cameras:
+            col_gaffer_cameras = coll_gaffer_cameras.collection
+            for camera in col_gaffer_cameras.objects:
+                row = col.row()
+                row.alignment = 'LEFT'
+                if context.active_object == camera:
+                    row.alert = True
+                if not camera in context.selected_objects:
+                    row.active = False
+                if not context.scene.camera == camera:
+                    op = row.operator('wm.context_set_value', text='scnCam')
+                    op.data_path = 'scene.camera'
+                    op.value = "context.scene.view_layers['{0}'].layer_collection.children['Gaffer'].children['Cameras'].collection.objects['{1}']".format(
+                                                    context.view_layer.name, 
+                                                    camera.name)
+                else:
+                    row.label(text='                ')
 
-            row.label(text=camera.name)
+                row.label(text=camera.name)
 
-            row.prop(camera.data, 'clip_start')
-            row.prop(camera.data, 'clip_end', )
+                row.prop(camera.data, 'clip_start')
+                row.prop(camera.data, 'clip_end', )
 
-            row = col.row()
-            row.alignment = 'RIGHT'
-            row.prop(camera.data.dof, 'use_dof')
-            row.prop(camera.data.dof, 'focus_distance')        
-            row.prop(camera.data.dof, 'aperture_fstop')
+                row = col.row()
+                row.alignment = 'RIGHT'
+                row.prop(camera.data.dof, 'use_dof')
+                row.prop(camera.data.dof, 'focus_distance')        
+                row.prop(camera.data.dof, 'aperture_fstop')
+                
+                col.separator()
+        else:
+            col.label(text="Missing /Gaffer/Cameras collection")
             
-            col.separator()
         layout.separator()        
-
 
         col = layout.column()
         col.label(text="LIGHTS", icon='LIGHT_DATA')
@@ -79,40 +101,43 @@ class HelloWorldPanel(bpy.types.Panel):
         if isinstance(context.active_object.data, bpy.types.Light):
             properties_context_change = row.operator('wm.properties_context_change', text='Light Properties', icon='LIGHT_DATA')
             properties_context_change.context = 'DATA'
-#        op = row.operator('wm.operator_pie_enum', text='Add Light')
-#        op.data_path = 'object.light_add'
-#        op.prop_string = 'type'
         
         col = layout.box()
-        col_gaffer = context.view_layer.layer_collection.children['Gaffer'].children['Lights'].collection
+        if coll_gaffer_lights:
+            col_gaffer = coll_gaffer_lights.collection
 
-        for light in col_gaffer.objects:
-            row = col.row()
-            if context.active_object == light:
-                row.alert = True
-            if not light in context.selected_objects:
-                row.active = False
+            for light in col_gaffer.objects:
+                if not isinstance(light.data, bpy.types.Light):
+                    continue
+l
+                row = col.row()
+                if context.active_object == light:
+                    row.alert = True
+                if not light in context.selected_objects:
+                    row.active = False
 
-            row.label(text=light.name)
-            row.prop(light.data, 'type', text='')
-            row.prop(light.data, 'color', text='')
-            row.prop(light.data, 'energy', text='')
-            row.prop(light.data, 'use_shadow', text='')
-            row.prop(light, 'hide_viewport', text='')
+                row.label(text=light.name)
+                row.prop(light.data, 'type', text='')
+                row.prop(light.data, 'color', text='')
+                row.prop(light.data, 'energy', text='')
+                row.prop(light.data, 'use_shadow', text='')
+                row.prop(light, 'hide_viewport', text='')
 
-            row = col.row()
-            row.label(text='')
-
-            if isinstance(light.data, bpy.types.AreaLight):
-                row.prop(light.data, 'shadow_buffer_clip_start', text='clip')
-            else:
+                row = col.row()
                 row.label(text='')
-            row.prop(light.data, 'shadow_buffer_bias', text='bias')
-            
-            col.separator()
 
+                if isinstance(light.data, bpy.types.AreaLight):
+                    row.prop(light.data, 'shadow_buffer_clip_start', text='clip')
+                else:
+                    row.label(text='')
+                row.prop(light.data, 'shadow_buffer_bias', text='bias')
+                
+                col.separator()
+        else:
+            col.label(text="Missing /Gaffer/Lights collection")
+                
         layout.separator()
-        
+            
         col = layout.column()
         col.alignment = 'LEFT'
         col.label(text="EVEEE SETTIGNS", icon='SCENE')
